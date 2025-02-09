@@ -1,0 +1,4 @@
+.vscode/
+third_party/
+ode_integration/build/
+ode_integration/results/
