@@ -62,6 +62,8 @@ int main(){
 
     // Plotting
     figure();
+    gcf()->size(800, 600);
+    
     hold(on);
     plot(xExact, yExact);
     plot(xEulerCauchy, yEulerCauchy);
@@ -76,15 +78,18 @@ int main(){
     save("results/odePlot.jpg");
 
     figure();
+    gcf()->size(800, 600);
+
     hold(on);
-    plot(xExact, computeErrorNorm(yExact, yEulerCauchy));
-    plot(xExact, computeErrorNorm(yExact, yImprovedEulerCauchy));
-    plot(xExact, computeErrorNorm(yExact, yRungeKutta4));
+    loglog(xExact, computeErrorNorm(yExact, yEulerCauchy));
+    loglog(xExact, computeErrorNorm(yExact, yImprovedEulerCauchy));
+    loglog(xExact, computeErrorNorm(yExact, yRungeKutta4));
     hold(off);
 
     xlabel("x");
     ylabel("Error norm");
     legend({"Euler-Cauchy", "Improved Euler-Cauchy", "Runge-Kutta 4"});
+    
 
     save("results/errorPlot.jpg");
     
