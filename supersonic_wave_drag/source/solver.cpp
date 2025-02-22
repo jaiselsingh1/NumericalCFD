@@ -30,7 +30,7 @@ double hyperbolic_pde(double M){
     for (int i = 1; i < ix + 1; ++i) {
         for (int j = 1; j < jx; ++j) {
             // Solving next values in the domain
-            phi[2][j] = 2 * phi[1][j] - phi[0][j] + phi[1][j+1] - 2 * phi[1][j] + phi[1][j-1];
+            phi[2][j] = - phi[0][j] + phi[1][j+1] + phi[1][j-1];
         }
         // Airfoil gradient
         double df = 2 * e_m * (1 - 2 * (i + 0.5) * dx);
