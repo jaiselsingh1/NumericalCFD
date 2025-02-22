@@ -5,9 +5,6 @@
 int main(){
     using namespace matplot;
 
-    // Start timing
-    auto start = std::chrono::high_resolution_clock::now();
-
     // Initializing vectors
     std::vector<double> M_vec{1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
     std::vector<double> cd_num_vec;
@@ -16,6 +13,9 @@ int main(){
     // Airfoil constant
     const double e_m = 0.1;
 
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
+    
     // Computing Drag Coefficient
     for (double M : M_vec){
         cd_num_vec.push_back(hyperbolic_pde(M));
