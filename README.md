@@ -1,2 +1,2 @@
-# NumericalCFD-Aersp423
-These are the code files for explori
+# NumericalCFD
+These are the code files for exploring numerical cfd
