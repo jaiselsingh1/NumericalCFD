@@ -19,7 +19,7 @@ int main(){
     // Computing Drag Coefficient
     for (double M : M_vec){
         cd_num_vec.push_back(hyperbolic_pde(M));
-        cd_exact_vec.push_back(double (16/3 * e_m * e_m / (std::sqrt(M*M - 1))));
+        cd_exact_vec.push_back(double (16.0/3.0 * e_m * e_m / (std::sqrt(M*M - 1))));
     }
 
     // Finish timing
