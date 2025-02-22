@@ -33,6 +33,9 @@ int main(){
     }
 
     // Plotting
+    figure();
+    gcf()->size(800, 600);
+    
     hold(on);
     plot(M_vec, cd_num_vec);
     plot(M_vec, cd_exact_vec);
