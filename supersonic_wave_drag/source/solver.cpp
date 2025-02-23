@@ -34,7 +34,7 @@ double sliding_window(double M){
             phi[2][j] = - phi[0][j] + phi[1][j+1] + phi[1][j-1];
         }
         // Airfoil gradient
-        double df = 2 * e_m * (1 - 2 * (i - 0.5) * dx);
+        double df = 2.0 * e_m * (1.0 - 2.0 * (i - 0.5) * dx);
 
         // Boundary conditions
         phi[2][jx] = phi[2][jx-1];
@@ -85,7 +85,7 @@ double full_domain(double M){
                 phi[i+1][j] = - phi[i-1][j] + phi[i][j+1] + phi[i][j-1];
             }
             // Airfoil gradient
-            double df = 2 * e_m * (1 - 2 * (i - 0.5) * dx);
+            double df = 2.0 * e_m * (1.0 - 2.0 * (i - 0.5) * dx);
     
             // Boundary conditions
             phi[i+1][jx] = phi[i+1][jx-1];

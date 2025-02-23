@@ -12,30 +12,20 @@ int main(){
 
     // Airfoil constant
     const double e_m = 0.1;
-
     
-    // Computing Drag Coefficient
-    for (double M : M_vec){
-        cd_num_vec.push_back(full_domain(M));
-        cd_exact_vec.push_back(double (16.0/3.0 * e_m * e_m / (std::sqrt(M*M - 1))));
-    }
-
-    // Start timing
+    // Timing
     auto start_full_domain = std::chrono::high_resolution_clock::now();
-
     full_domain(M_vec[0]);
-
-    // Finish timing
     auto end_full_domain = std::chrono::high_resolution_clock::now();
-
-    // Start timing
     auto start_sliding_window = std::chrono::high_resolution_clock::now();
-
     sliding_window(M_vec[0]);
-
-    // Finish timing
     auto end_sliding_window = std::chrono::high_resolution_clock::now();
 
+    // Computing Drag Coefficient
+    for (double M : M_vec){
+        cd_num_vec.push_back(sliding_window(M));
+        cd_exact_vec.push_back(double (16.0/3.0 * e_m * e_m / (std::sqrt(M*M - 1))));
+    }
 
     // Outputting
     std::chrono::duration<double> elapsed_full_domain = end_full_domain - start_full_domain;
