@@ -4,3 +4,4 @@ ode_integration/build/
 ode_integration/results/
 supersonic_wave_drag/build/
 supersonic_wave_drag/results/
+.ipynb_checkpoints
