@@ -13,21 +13,35 @@ int main(){
     // Airfoil constant
     const double e_m = 0.1;
 
-    // Start timing
-    auto start = std::chrono::high_resolution_clock::now();
     
     // Computing Drag Coefficient
     for (double M : M_vec){
-        cd_num_vec.push_back(hyperbolic_pde(M));
+        cd_num_vec.push_back(full_domain(M));
         cd_exact_vec.push_back(double (16.0/3.0 * e_m * e_m / (std::sqrt(M*M - 1))));
     }
 
+    // Start timing
+    auto start_full_domain = std::chrono::high_resolution_clock::now();
+
+    full_domain(M_vec[0]);
+
     // Finish timing
-    auto end = std::chrono::high_resolution_clock::now();
+    auto end_full_domain = std::chrono::high_resolution_clock::now();
+
+    // Start timing
+    auto start_sliding_window = std::chrono::high_resolution_clock::now();
+
+    sliding_window(M_vec[0]);
+
+    // Finish timing
+    auto end_sliding_window = std::chrono::high_resolution_clock::now();
+
 
     // Outputting
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds\n";
+    std::chrono::duration<double> elapsed_full_domain = end_full_domain - start_full_domain;
+    std::chrono::duration<double> elapsed_sliding_window = end_sliding_window - start_sliding_window;
+    std::cout << "Elapsed time (Full Domain): " << elapsed_full_domain.count() << " seconds\n";
+    std::cout << "Elapsed time (Sliding Window): " << elapsed_sliding_window.count() << " seconds\n";
     for (int i = 0; i < static_cast<int>(M_vec.size()); ++i){
         std::cout << "@ M = " << M_vec[i] << " , cd = " << cd_num_vec[i] << std::endl;
     }

@@ -5,6 +5,7 @@
 #include <cmath>
 
 // Takes in Mach number and outputs drag coefficient
-double hyperbolic_pde(double M);
+double sliding_window(double M);
+double full_domain(double M);
 
 #endif
