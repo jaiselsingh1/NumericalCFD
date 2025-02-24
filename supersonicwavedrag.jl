@@ -14,8 +14,8 @@ function wave_drag(M)
     
     e_m = 0.1 #percent thickness of airfoil 
 
-    jx = 5001 #number of grid points (y-direction)
-    dy = (y_max - y_min)/(jx)
+    jx = 51 #number of grid points (y-direction)
+    dy = (y_max - y_min)/(jx - 1)
 
     σ = 1 # convergence condition (courant number)
     dx = σ * β * dy # x is "time like" 
