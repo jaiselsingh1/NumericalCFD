@@ -3,7 +3,9 @@ using Plots
 
 function laval_nozzle_numerical_solver(u_outlet, ix=210)
     # Parameters
-    ε = 1e-6
+    # iter = 0
+    # max_iter = 500
+    ε = 1e-3
     Δx = 1/ix
     Δt = Δx/(-u_outlet)
     x = range(0, 1, length=ix+1)
@@ -60,11 +62,18 @@ function laval_nozzle_numerical_solver(u_outlet, ix=210)
         
         # Update solution
         u .= u_next
+        # iter += 1 
         
         # Check for convergence
         if norm(u - u_prev) < ε
             converged = true
         end
+
+        #=
+        if iter == max_iter
+            converged = true 
+        end
+        =# 
     end
     
     return u, x
