@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def laval_nozzle_numerical_solver(u_outlet, ix):
 
     # Parameters
-    eps = 1e-6
+    eps = 1e-3
     dx = 1/ix
     dt = dx/-u_outlet
 
@@ -45,7 +45,7 @@ def laval_nozzle_numerical_solver(u_outlet, ix):
             elif (u_minus_half > 0) and (u_plus_half < 0):
                 u_next[i] = u[i] + dt * (RHS - u_minus_half*(u[i] - u[i-1])/dx - u_plus_half*(u[i+1] - u[i])/dx)
             elif (u_minus_half <= 0) and (u_plus_half >= 0):
-                u_next[i] = (u[i] + dt*RHS)/(1 + dt/(2*dx)*(u[i+1] - u[i-1]))
+                u_next[i] = (u[i] + dt*RHS)/(1 + 0.5*dt/dx*(u[i+1] - u[i-1]))
             elif (u_minus_half < 0) and (u_plus_half < 0):
                 u_next[i] = u[i] + dt * (RHS - u_plus_half*(u[i+1] - u[i])/dx)
 
@@ -78,8 +78,8 @@ if __name__ == "__main__":
     u_num_a = laval_nozzle_numerical_solver(-np.sqrt(1.5), ix)
     u_exact_a = laval_nozzle_exact_solver(-np.sqrt(1.5), ix)
 
-    u_num_b = laval_nozzle_numerical_solver(-1., ix)
-    u_exact_b = laval_nozzle_exact_solver(-1., ix)
+    u_num_b = laval_nozzle_numerical_solver(-1.0, ix)
+    u_exact_b = laval_nozzle_exact_solver(-1.0, ix)
     
     plt.figure()
     plt.plot(x, u_num_a, label='Numerical')
