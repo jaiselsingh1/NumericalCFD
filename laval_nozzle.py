@@ -87,6 +87,7 @@ if __name__ == "__main__":
     plt.xlabel('x')
     plt.ylabel('u')
     plt.title('u_outlet = -sqrt(1.5)')
+    plt.legend()
 
     plt.figure()
     plt.plot(x, u_num_b, label='Numerical')
@@ -94,5 +95,6 @@ if __name__ == "__main__":
     plt.xlabel('x')
     plt.ylabel('u')
     plt.title('u_outlet = -1.0')
+    plt.legend()
 
     plt.show()
