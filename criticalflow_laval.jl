@@ -1,6 +1,9 @@
 using LinearAlgebra
 using Plots
 
+using LinearAlgebra
+using Plots
+
 function solve_laval_nozzle(u_exit)
     # Setup parameters
     ix = 211
@@ -9,9 +12,13 @@ function solve_laval_nozzle(u_exit)
     
     # Initialize solution
     u = zeros(ix)
-    u[1] = u_exit # Set inlet boundary condition 
+    u[1] = u_exit # Set inlet boundary condition
     u[ix] = u_exit # Set outlet boundary condition
     
+    # set all interior points to 0 
+    for i in 2:ix-1
+        u[i] = 0.0
+    end
     
     # Functions for nozzle geometry
     function g(x)
@@ -22,7 +29,7 @@ function solve_laval_nozzle(u_exit)
         return 8*(x-0.5)
     end
     
-    # Functions to calculate half-point values correctly
+    # Functions to calculate half-point values
     function u_halffwd(u, i)
         return (u[i+1] + u[i])/2
     end
@@ -36,8 +43,12 @@ function solve_laval_nozzle(u_exit)
     converged = false
     
     while !converged
+        # Calculate time step for stability
         Δt = Δx/(-u_exit)
-                
+        
+        # Save current solution 
+        uold .= u
+        
         # Update solution for interior points
         for i in 2:ix-1
             # Calculate RHS (right-hand side) term
@@ -53,21 +64,16 @@ function solve_laval_nozzle(u_exit)
                                    u_halffwd(u, i) * (u[i+1] - u[i])/Δx)
             elseif (u_halfbwd(u, i) < 0) && (u_halffwd(u, i) > 0)
                 # Sonic point
-                u[i] = u[i] + Δt * (rhs - u[i+1] * (u[i+1] - u[i-1])/(2*Δx))
+                u[i] = (u[i] + Δt * rhs) / (1 + Δt/(2*Δx) * (u[i+1] - u[i-1]))
             elseif (u_halfbwd(u, i) < 0) && (u_halffwd(u, i) < 0)
                 # Subsonic point
                 u[i] = u[i] + Δt * (rhs - u_halffwd(u, i) * (u[i+1] - u[i])/Δx)
             end
-
-
         end
         
-        # convergence check
         if maximum(abs.(u - uold)) <= 1.0e-6
             converged = true
         end
-
-        uold .= u
     end
     
     return u, x
