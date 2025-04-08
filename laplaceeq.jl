@@ -24,17 +24,23 @@ n_terms = 50
 function exact_solution(x, y, L, W, n_terms)
     result = 0.0 
     for n in 1:n_terms 
-        term = (2.0 / π) * (((-1)^(n+1) + 1) / n)
-        term *= sin(n * π * x / L)
-        term *= sinh(n * π * y / L) / sinh(n * π * W / L)
-        result += term 
+        # Calculate the coefficient
+        coef = ((-1)^(n+1) + 1)
+        
+        # Only proceed if coefficient is non-zero
+        if coef != 0
+            term = (2.0 / π) * (coef / n)
+            term *= sin(n * π * x / L)
+            term *= sinh(n * π * y / L) / sinh(n * π * W / L)
+            result += term
+        end
     end 
     return result 
 end 
 
 function jacobi_method(ix, jx, Δx, Δy, ϵ)
     ϕ = zeros(ix+1, jx+1)
-
+    
     # Apply boundary conditions
     ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
     ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
@@ -42,52 +48,51 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
     ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
     ϕ_next = copy(ϕ)
+    
+    # Track residuals for plotting
     residuals = Float64[]
     
-    # Coefficients for the Jacobi update formula
-    cx = 1.0 / (Δx^2)
-    cy = 1.0 / (Δy^2)
-    c_total = 2.0 * (cx + cy)
-    
+    # Iteration loop
     converged = false
     
     while !converged
+        # Interior points update using the Jacobi formula from Image 3
         for i in 2:ix
             for j in 2:jx
-                ϕ_next[i, j] = (cx * (ϕ[i+1, j] + ϕ[i-1, j]) + 
-                               cy * (ϕ[i, j+1] + ϕ[i, j-1])) / c_total
+                ϕ_next[i, j] = (
+                    (ϕ[i+1, j] + ϕ[i-1, j]) / (Δx^2) + 
+                    (ϕ[i, j+1] + ϕ[i, j-1]) / (Δy^2)
+                ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
             end
         end
         
+        # Calculate max residual
         max_res = maximum(abs.(ϕ_next - ϕ))
         push!(residuals, max_res)
         
+        # Check convergence
         if max_res < ϵ
             converged = true
         end
         
+        # Update solution for next iteration
         ϕ .= ϕ_next
     end
     
     return ϕ, residuals
 end
 
-
-function gauss_seidel()
-    
-end 
-
-
-
-
+# Solve using two different grid sizes
 ϕ1, residuals1 = jacobi_method(ix1, jx1, Δx1, Δy1, ϵ)
 ϕ2, residuals2 = jacobi_method(ix2, jx2, Δx2, Δy2, ϵ)
 
+# Create x and y coordinates for both grids
 x_values1 = range(0, L, length=ix1+1)
 y_values1 = range(0, W, length=jx1+1)
 x_values2 = range(0, L, length=ix2+1)
 y_values2 = range(0, W, length=jx2+1)
 
+# Calculate exact solution on both grids
 ϕ_exact1 = [exact_solution(x, y, L, W, n_terms) for y in y_values1, x in x_values1]
 ϕ_exact2 = [exact_solution(x, y, L, W, n_terms) for y in y_values2, x in x_values2]
 
@@ -112,7 +117,14 @@ plot!(plt2, x_values1, ϕ1[mid_index1, :],
 plot!(plt2, x_values2, ϕ2[mid_index2, :], 
      linestyle=:dot, label="Numerical (100×100)")
 
-plot(plt1, plt2, layout=(2,1), size=(800, 600))
+# Contour plot of the exact solution
+plt3 = contour(x_values2, y_values2, ϕ_exact2, 
+              title="Contour Plot of Exact Solution",
+              xlabel="x", ylabel="y",
+              color=:turbo, levels=20)
+
+# Display the plots
+plot(plt1, plt2, plt3, layout=(3,1), size=(800, 900))
 
 
 
