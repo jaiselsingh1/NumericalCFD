@@ -24,7 +24,7 @@ n_terms = 50
 function exact_solution(x, y, L, W, n_terms)
     result = 0.0 
     for n in 1:n_terms 
-        term =  ((-1)^(n+1) + 1) / n 
+        term = ((-1)^(n+1) + 1) / n 
         term *= sin(n * π * x / L)
         term *= sinh(n * π * y / L) / sinh(n * π * W / L)
         result += term
@@ -33,27 +33,14 @@ function exact_solution(x, y, L, W, n_terms)
     return result 
 end 
 
-# Residual calculation for Jacobi method
-function calculate_jacobi_residual(ϕ, ix, jx, Δx, Δy)
+# Residual calculation - used for tracking convergence quality
+function calculate_residual(ϕ, ix, jx, Δx, Δy)
     max_res = 0.0
     for i in 2:ix
         for j in 2:jx
             res = (ϕ[i+1, j] - 2*ϕ[i, j] + ϕ[i-1, j])/(Δx^2) + 
                   (ϕ[i, j+1] - 2*ϕ[i, j] + ϕ[i, j-1])/(Δy^2)
             
-            max_res = max(max_res, abs(res))
-        end
-    end
-    return max_res
-end
-
-# Residual calculation for Gauss-Seidel method
-function calculate_gauss_seidel_residual(ϕ, ix, jx, Δx, Δy)
-    max_res = 0.0
-    for i in 2:ix
-        for j in 2:jx
-            res = (ϕ[i+1, j] - 2*ϕ[i, j] + ϕ[i-1, j])/(Δx^2) + 
-                  (ϕ[i, j+1] - 2*ϕ[i, j] + ϕ[i, j-1])/(Δy^2)
             max_res = max(max_res, abs(res))
         end
     end
@@ -87,12 +74,17 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
             end
         end
         
-        # Calculate residual specifically for Jacobi method
-        max_res = calculate_jacobi_residual(ϕ_next, ix, jx, Δx, Δy)
+        # Calculate change between iterations (for convergence check)
+        # Using Frobenius norm (2-norm) for convergence
+        diff = ϕ_next - ϕ
+        change_norm = norm(diff)
+        
+        # Calculate residual (for plotting)
+        max_res = calculate_residual(ϕ_next, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
-        # Check convergence
-        if max_res < ϵ
+        # Check convergence based on norm of change
+        if change_norm < ϵ
             converged = true
         end
         
@@ -112,7 +104,52 @@ function gauss_seidel(ix, jx, Δx, Δy, ϵ)
     ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
     ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
-    ϕ_next = copy(ϕ)
+    # Track residuals for plotting
+    residuals = Float64[]
+    
+    # Iteration loop
+    converged = false
+    
+    while !converged
+        # Store previous solution for convergence check
+        ϕ_prev = copy(ϕ)
+        
+        for i in 2:ix
+            for j in 2:jx
+                ϕ[i, j] = (
+                    (ϕ[i+1, j] + ϕ[i-1, j]) / (Δx^2) + 
+                    (ϕ[i, j+1] + ϕ[i, j-1]) / (Δy^2)
+                ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
+            end
+        end
+        
+        # Calculate change between iterations (for convergence check)
+        # Using Frobenius norm (2-norm) for convergence
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
+        # Calculate residual (for plotting)
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
+        push!(residuals, max_res)
+        
+        # Check convergence based on norm of change
+        if change_norm < ϵ
+            converged = true
+        end
+    end
+    
+    return ϕ, residuals
+end
+
+function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.5)
+    # Initialize solution array
+    ϕ = zeros(ix+1, jx+1)
+    
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
+    ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
+    ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
+    ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
     # Track residuals for plotting
     residuals = Float64[]
@@ -121,30 +158,41 @@ function gauss_seidel(ix, jx, Δx, Δy, ϵ)
     converged = false
     
     while !converged
+        # Create a copy of the current solution to calculate change
+        ϕ_prev = copy(ϕ)
+        
+        # Update using SOR method
         for i in 2:ix
             for j in 2:jx
-                ϕ_next[i, j] = (
-                    (ϕ[i+1, j] + ϕ_next[i-1, j]) / (Δx^2) + 
-                    (ϕ[i, j+1] + ϕ_next[i, j-1]) / (Δy^2)
+                # Calculate the Gauss-Seidel update
+                gs_update = (
+                    (ϕ[i+1, j] + ϕ[i-1, j]) / (Δx^2) + 
+                    (ϕ[i, j+1] + ϕ[i, j-1]) / (Δy^2)
                 ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
+                
+                # Apply SOR formula: ϕ_new = ϕ_old + ω(ϕ_gs - ϕ_old)
+                ϕ[i, j] = (1.0 - ω) * ϕ[i, j] + ω * gs_update
             end
         end
         
-        # Calculate residual specifically for Gauss-Seidel method
-        max_res = calculate_gauss_seidel_residual(ϕ_next, ix, jx, Δx, Δy)
+        # Calculate change between iterations (for convergence check)
+        # Using Frobenius norm (2-norm) for convergence
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
+        # Calculate residual (for plotting)
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
-        # Check convergence
-        if max_res < ϵ
+        # Check convergence based on norm of change
+        if change_norm < ϵ
             converged = true
         end
-        
-        # Update solution for next iteration
-        ϕ .= ϕ_next
     end
     
     return ϕ, residuals
 end
+        
 
 # Plot Generation 
 # Solve using two different grid sizes for Jacobi 
