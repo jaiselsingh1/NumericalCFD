@@ -19,20 +19,46 @@ n_terms = 50
 Δy2 = W / jx2
 
 # Convergence criteria
-ϵ = 1e-5 
+ϵ = 1e-5
 
 function exact_solution(x, y, L, W, n_terms)
     result = 0.0 
     for n in 1:n_terms 
-        # Calculate the coefficient
-        coef = ((-1)^(n+1) + 1)
-        term = (2.0 / π) * (coef / n)
+        term =  ((-1)^(n+1) + 1) / n 
         term *= sin(n * π * x / L)
         term *= sinh(n * π * y / L) / sinh(n * π * W / L)
         result += term
     end 
+    result *= (2.0 / π)  
     return result 
 end 
+
+# Residual calculation for Jacobi method
+function calculate_jacobi_residual(ϕ, ix, jx, Δx, Δy)
+    max_res = 0.0
+    for i in 2:ix
+        for j in 2:jx
+            res = (ϕ[i+1, j] - 2*ϕ[i, j] + ϕ[i-1, j])/(Δx^2) + 
+                  (ϕ[i, j+1] - 2*ϕ[i, j] + ϕ[i, j-1])/(Δy^2)
+            
+            max_res = max(max_res, abs(res))
+        end
+    end
+    return max_res
+end
+
+# Residual calculation for Gauss-Seidel method
+function calculate_gauss_seidel_residual(ϕ, ix, jx, Δx, Δy)
+    max_res = 0.0
+    for i in 2:ix
+        for j in 2:jx
+            res = (ϕ[i+1, j] - 2*ϕ[i, j] + ϕ[i-1, j])/(Δx^2) + 
+                  (ϕ[i, j+1] - 2*ϕ[i, j] + ϕ[i, j-1])/(Δy^2)
+            max_res = max(max_res, abs(res))
+        end
+    end
+    return max_res
+end
 
 function jacobi_method(ix, jx, Δx, Δy, ϵ)
     ϕ = zeros(ix+1, jx+1)
@@ -61,8 +87,8 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
             end
         end
         
-        # Calculate max residual
-        max_res = maximum(abs.(ϕ_next - ϕ))
+        # Calculate residual specifically for Jacobi method
+        max_res = calculate_jacobi_residual(ϕ_next, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
         # Check convergence
@@ -76,7 +102,6 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
     
     return ϕ, residuals
 end
-
 
 function gauss_seidel(ix, jx, Δx, Δy, ϵ)
     ϕ = zeros(ix+1, jx+1)
@@ -105,8 +130,8 @@ function gauss_seidel(ix, jx, Δx, Δy, ϵ)
             end
         end
         
-        # Calculate max residual
-        max_res = maximum(abs.(ϕ_next - ϕ))
+        # Calculate residual specifically for Gauss-Seidel method
+        max_res = calculate_gauss_seidel_residual(ϕ_next, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
         # Check convergence
@@ -186,7 +211,6 @@ plt3 = contour(x_values2, y_values2, ϕ_exact2,
               xlabel="x", ylabel="y",
               color=:turbo, levels=20)
 
-              
 plot(plt1_jacobi, plt2_jacobi, plt1_gauss, plt2_gauss, plt3, layout=(5,1), size=(800, 1200))
 
 # Option 2: Display Jacobi and Gauss-Seidel plots separately
