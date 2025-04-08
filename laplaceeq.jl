@@ -26,14 +26,10 @@ function exact_solution(x, y, L, W, n_terms)
     for n in 1:n_terms 
         # Calculate the coefficient
         coef = ((-1)^(n+1) + 1)
-        
-        # Only proceed if coefficient is non-zero
-        if coef != 0
-            term = (2.0 / π) * (coef / n)
-            term *= sin(n * π * x / L)
-            term *= sinh(n * π * y / L) / sinh(n * π * W / L)
-            result += term
-        end
+        term = (2.0 / π) * (coef / n)
+        term *= sin(n * π * x / L)
+        term *= sinh(n * π * y / L) / sinh(n * π * W / L)
+        result += term
     end 
     return result 
 end 
@@ -56,7 +52,6 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
     converged = false
     
     while !converged
-        # Interior points update using the Jacobi formula from Image 3
         for i in 2:ix
             for j in 2:jx
                 ϕ_next[i, j] = (
@@ -81,6 +76,11 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
     
     return ϕ, residuals
 end
+
+
+function gauss_seidel()
+
+end 
 
 # Solve using two different grid sizes
 ϕ1, residuals1 = jacobi_method(ix1, jx1, Δx1, Δy1, ϵ)
