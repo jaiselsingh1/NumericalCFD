@@ -47,6 +47,38 @@ function calculate_residual(ϕ, ix, jx, Δx, Δy)
     return max_res
 end
 
+function thomas_algorithm(a, b, c, d)
+    # a is the lower diagnol 
+    # b is the main diagnol 
+    # c is the upper diagnol 
+    # d is the original solution 
+
+    n = length(d) # this is the number of unknowns that we are using the Thomas Algo to solve (our case the interior grid points)
+    c_prime = zeros(n) # modified upper diagnol 
+    d_prime = zeros(n) # modified solution 
+    x = zeros(n) # solution vector 
+
+    # normalize the main diagnol term 
+    c_prime[1] = c[1] / b[1]
+    d_prime[1] = d[1] / b[1]
+
+    # you are doing this for all the elements in each row 
+    for i in 2:n 
+        denominator = b[i] - a[i] * c_prime[i-1]
+        c_prime[i] = c[i] / denominator 
+        d_prime[i] = (d[i] - a[i] * d_prime[i-1]) / denominator
+    end 
+
+    x[n] = d_prime[n]
+
+    for i in n-1:-1:1
+        # solve for each unknown using the modified system
+        x[i] = d_prime[i] - c_prime[i] * x[i+1]
+    end
+    
+    return x
+end 
+
 function jacobi_method(ix, jx, Δx, Δy, ϵ)
     ϕ = zeros(ix+1, jx+1)
     
@@ -157,7 +189,7 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
                     (ϕ[i, j+1] + ϕ_next[i, j-1]) / (Δy^2)
                 ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
                 
-                ϕ_next[i, j] = (1.0 - ω) * ϕ[i, j] + ω * gs_update
+                ϕ_next[i, j] = (1.0 - ω) * ϕ[i, j] + ω * gs_update   # gs_update is gauss-seidel equivalent 
             end
         end
         
@@ -177,8 +209,31 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     return ϕ, residuals
 end
 
-function SLOR()
+function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
+    # Initialize solution array
+    ϕ = zeros(ix+1, jx+1)
     
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
+    ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
+    ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
+    ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
+    
+    ϕ_prev = copy(ϕ)
+    residuals = Float64[]
+    converged = false
+    
+    while !converged
+        ϕ_prev .= ϕ
+        
+        for i in 2:ix
+            for j in 2:jx
+            # set up triagnol system for this line and then iterate 
+                
+
+            end 
+        end 
+
 end
 
 # Generate grid data
@@ -275,11 +330,35 @@ plot!(plt_sor_solution, x_values1, ϕ1_sor[:, mid_index1],
 plot!(plt_sor_solution, x_values2, ϕ2_sor[:, mid_index2], 
      linestyle=:dot, label="100×100 Grid")
 
-# Combine all plots
+# e. SLOR method
+ω = 1.8
+ϕ1_slor, residuals1_slor = SLOR(ix1, jx1, Δx1, Δy1, ϵ, ω)
+ϕ2_slor, residuals2_slor = SLOR(ix2, jx2, Δx2, Δy2, ϵ, ω)
+
+# e.a: Residual plot
+plt_slor_residual = plot(1:length(residuals1_slor), residuals1_slor, 
+                        xlabel="Iteration", ylabel="Max Residual", 
+                        title="SLOR Method (ω=1.8): Residual vs Iteration",
+                        label="50×50 Grid", yscale=:log10, legend=:topright)
+plot!(plt_slor_residual, 1:length(residuals2_slor), residuals2_slor, 
+      label="100×100 Grid")
+
+# e.b: Solution plot
+plt_slor_solution = plot(x_values2, ϕ_exact2[mid_index2, :], 
+                        xlabel="x", ylabel="ϕ(x,W/2)", 
+                        title="SLOR Method (ω=1.8): Solution at y=W/2",
+                        label="Exact Solution", legend=:topright)
+plot!(plt_slor_solution, x_values1, ϕ1_slor[:, mid_index1], 
+      linestyle=:dash, label="50×50 Grid")
+plot!(plt_slor_solution, x_values2, ϕ2_slor[:, mid_index2], 
+      linestyle=:dot, label="100×100 Grid")
+
+# Updated combined plot including SLOR method
 plot(
     plt_contour, plt_exact_mid,
     plt_jacobi_residual, plt_jacobi_solution,
     plt_gauss_residual, plt_gauss_solution,
     plt_sor_residual, plt_sor_solution,
-    layout=(4, 2), size=(1200, 1600)
+    plt_slor_residual, plt_slor_solution,
+    layout=(5, 2), size=(1200, 2000)
 )
