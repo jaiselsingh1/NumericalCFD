@@ -56,12 +56,14 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
     ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
     ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
+    ϕ_prev = copy(ϕ)
     ϕ_next = copy(ϕ)
     
     residuals = Float64[]
     converged = false
     
     while !converged
+        ϕ_prev .= ϕ
         for i in 2:ix
             for j in 2:jx
                 ϕ_next[i, j] = (
@@ -70,18 +72,18 @@ function jacobi_method(ix, jx, Δx, Δy, ϵ)
                 ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
             end
         end
+
+        ϕ .= ϕ_next
         
-        diff = ϕ_next - ϕ
+        diff = ϕ - ϕ_prev
         change_norm = norm(diff)
         
-        max_res = calculate_residual(ϕ_next, ix, jx, Δx, Δy)
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
         if change_norm < ϵ
             converged = true
         end
-        
-        ϕ .= ϕ_next
     end
     
     return ϕ, residuals
@@ -96,12 +98,15 @@ function gauss_seidel(ix, jx, Δx, Δy, ϵ)
     ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
     ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
+    ϕ_prev = copy(ϕ)
     ϕ_next = copy(ϕ)
     
     residuals = Float64[]
     converged = false
     
     while !converged
+        ϕ_prev .= ϕ
+        
         for i in 2:ix
             for j in 2:jx
                 ϕ_next[i, j] = (
@@ -111,17 +116,17 @@ function gauss_seidel(ix, jx, Δx, Δy, ϵ)
             end
         end
         
-        diff = ϕ_next - ϕ
+        ϕ .= ϕ_next
+        
+        diff = ϕ - ϕ_prev
         change_norm = norm(diff)
         
-        max_res = calculate_residual(ϕ_next, ix, jx, Δx, Δy)
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
         if change_norm < ϵ
             converged = true
         end
-        
-        ϕ .= ϕ_next
     end
     
     return ϕ, residuals
@@ -136,39 +141,44 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
     ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     
+    ϕ_prev = copy(ϕ)
     ϕ_next = copy(ϕ)
     
     residuals = Float64[]
     converged = false
     
     while !converged
+        ϕ_prev .= ϕ
+        
         for i in 2:ix
             for j in 2:jx
-                # Calculate the Gauss-Seidel update
                 gs_update = (
                     (ϕ[i+1, j] + ϕ_next[i-1, j]) / (Δx^2) + 
                     (ϕ[i, j+1] + ϕ_next[i, j-1]) / (Δy^2)
                 ) / (2 * (1/(Δx^2) + 1/(Δy^2)))
                 
-                # Apply SOR formula
                 ϕ_next[i, j] = (1.0 - ω) * ϕ[i, j] + ω * gs_update
             end
         end
         
-        diff = ϕ_next - ϕ
+        ϕ .= ϕ_next
+        
+        diff = ϕ - ϕ_prev
         change_norm = norm(diff)
         
-        max_res = calculate_residual(ϕ_next, ix, jx, Δx, Δy)
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
         if change_norm < ϵ
             converged = true
         end
-        
-        ϕ .= ϕ_next
     end
     
     return ϕ, residuals
+end
+
+function SLOR()
+    
 end
 
 # Generate grid data
@@ -195,7 +205,8 @@ plt_contour = contour(x_values2, y_values2, ϕ_exact2,
 # a.ii: Solution at y=W/2
 plt_exact_mid = plot(x_values2, ϕ_exact2[mid_index2, :],
                     title="Exact Solution at y=W/2",
-                    xlabel="x", ylabel="ϕ(x,W/2)")
+                    xlabel="x", ylabel="ϕ(x,W/2)",
+                    label="y1")
 
 # b. Jacobi method
 ϕ1_jacobi, residuals1_jacobi = jacobi_method(ix1, jx1, Δx1, Δy1, ϵ)
