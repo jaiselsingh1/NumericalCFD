@@ -225,9 +225,9 @@ plt_jacobi_solution = plot(x_values2, ϕ_exact2[mid_index2, :],
                           xlabel="x", ylabel="ϕ(x,W/2)", 
                           title="Jacobi Method: Solution at y=W/2",
                           label="Exact Solution", legend=:topright)
-plot!(plt_jacobi_solution, x_values1, ϕ1_jacobi[mid_index1, :], 
+plot!(plt_jacobi_solution, x_values1, ϕ1_jacobi[:, mid_index1], 
      linestyle=:dash, label="50×50 Grid")
-plot!(plt_jacobi_solution, x_values2, ϕ2_jacobi[mid_index2, :], 
+plot!(plt_jacobi_solution, x_values2, ϕ2_jacobi[:, mid_index2], 
      linestyle=:dot, label="100×100 Grid")
 
 # c. Gauss-Seidel method
@@ -247,9 +247,9 @@ plt_gauss_solution = plot(x_values2, ϕ_exact2[mid_index2, :],
                          xlabel="x", ylabel="ϕ(x,W/2)", 
                          title="Gauss-Seidel Method: Solution at y=W/2",
                          label="Exact Solution", legend=:topright)
-plot!(plt_gauss_solution, x_values1, ϕ1_gauss[mid_index1, :], 
+plot!(plt_gauss_solution, x_values1, ϕ1_gauss[:, mid_index1], 
      linestyle=:dash, label="50×50 Grid")
-plot!(plt_gauss_solution, x_values2, ϕ2_gauss[mid_index2, :], 
+plot!(plt_gauss_solution, x_values2, ϕ2_gauss[:, mid_index2], 
      linestyle=:dot, label="100×100 Grid")
 
 # d. SOR method
@@ -270,9 +270,9 @@ plt_sor_solution = plot(x_values2, ϕ_exact2[mid_index2, :],
                        xlabel="x", ylabel="ϕ(x,W/2)", 
                        title="SOR Method (ω=1.8): Solution at y=W/2",
                        label="Exact Solution", legend=:topright)
-plot!(plt_sor_solution, x_values1, ϕ1_sor[mid_index1, :], 
+plot!(plt_sor_solution, x_values1, ϕ1_sor[:, mid_index1], 
      linestyle=:dash, label="50×50 Grid")
-plot!(plt_sor_solution, x_values2, ϕ2_sor[mid_index2, :], 
+plot!(plt_sor_solution, x_values2, ϕ2_sor[:, mid_index2], 
      linestyle=:dot, label="100×100 Grid")
 
 # Combine all plots
