@@ -47,36 +47,32 @@ function calculate_residual(ϕ, ix, jx, Δx, Δy)
     return max_res
 end
 
-function thomas_algorithm(a, b, c, d)
+function thomas_algorithm(a, b, c, d, n)
+    # d is the solution vector 
     # a is the lower diagnol 
-    # b is the main diagnol 
+    # b is main diagnol 
     # c is the upper diagnol 
-    # d is the original solution 
 
-    n = length(d) # this is the number of unknowns that we are using the Thomas Algo to solve (our case the interior grid points)
-    c_prime = zeros(n) # modified upper diagnol 
-    d_prime = zeros(n) # modified solution 
-    x = zeros(n) # solution vector 
+    x = copy(d) # make a copy of the solution 
+    c_prime = copy(c) # this will be updated throughout 
 
-    # normalize the main diagnol term 
-    c_prime[1] = c[1] / b[1]
-    d_prime[1] = d[1] / b[1]
+    # first row has no a component
+    c_prime[1] /= b[1] # normalize the upper diagnol 
+    x[1] /= b[1] # 
 
-    # you are doing this for all the elements in each row 
-    for i in 2:n 
-        denominator = b[i] - a[i] * c_prime[i-1]
-        c_prime[i] = c[i] / denominator 
-        d_prime[i] = (d[i] - a[i] * d_prime[i-1]) / denominator
+    #rows below the first row 
+    for i = 2:n 
+        scale = 1.0 / (b[i] - a[i] * c_prime[i-1])
+        c_prime[i] *= scale 
+        x[i] = (x[i] - a[i] * c_prime[i-1]) * scale 
     end 
 
-    x[n] = d_prime[n]
+    # do back substitution 
+    for i = n-1:-1:1
+        x[i] -= (c_prime[i] * x[i+1])
+    end 
 
-    for i in n-1:-1:1
-        # solve for each unknown using the modified system
-        x[i] = d_prime[i] - c_prime[i] * x[i+1]
-    end
-    
-    return x
+    return x 
 end 
 
 function jacobi_method(ix, jx, Δx, Δy, ϵ)
@@ -209,32 +205,69 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     return ϕ, residuals
 end
 
-function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
-    # Initialize solution array
+function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     ϕ = zeros(ix+1, jx+1)
+    ϕ_next = copy(ϕ)
     
-    # Apply boundary conditions
-    ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
-    ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
-    ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
-    ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
+    ϕ[:, 1] .= 0.0
+    ϕ[:, jx+1] .= 1.0
+    ϕ[1, :] .= 0.0
+    ϕ[ix+1, :] .= 0.0
+    ϕ_next .= ϕ
     
-    ϕ_prev = copy(ϕ)
     residuals = Float64[]
     converged = false
+    iter_count = 0
     
-    while !converged
-        ϕ_prev .= ϕ
+    while !converged && iter_count < max_iter
+        iter_count += 1
+        ϕ_prev = copy(ϕ)
         
         for i in 2:ix
+            # the a,b,c,d should be the ϕ_prev values for the iteration to make sense?
+            a = zeros(jx-1) # lower 
+            b = zeros(jx-1) # main 
+            c = zeros(jx-1) # upper 
+            d = zeros(jx-1) # solution/RHS 
+
             for j in 2:jx
-            # set up triagnol system for this line and then iterate 
+                # Set coefficients for the tridiagonal system
+                a[j] = 1.0/(Δy^2)  # Lower diagonal coefficient
+                b[j] = -2.0 * ((1.0/(Δx^2)) + (1.0/(Δy^2)))  # Main diagonal coefficient
+                c[j] = 1.0/(Δy^2)  # Upper diagonal coefficient
                 
+                # Set the right-hand side with existing values from neighboring points
+                d[j] = -(1.0/(Δx^2)) * (ϕ[i+1, j] + ϕ_next[i-1, j])
+            end
+        
+            # Lower boundary (j=1)
+            d[2] -= (1.0/(Δy^2)) * ϕ[i, 1]
+            # Upper boundary (j=jx+1)
+            d[jx] -= (1.0/(Δy^2)) * ϕ[i, jx+1]
 
-            end 
-        end 
+            ϕ_tilde = thomas_algorithm(a, b, c, d, jx)
+            ϕ_next[i,:] = ϕ[i,:] + ω * (ϕ_tilde - ϕ[i,:])
 
+        end
+
+        ϕ .= ϕ_next 
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
+        push!(residuals, max_res)
+        
+        if change_norm < ϵ
+            converged = true
+        end
+
+    end 
+        
+    
+    return ϕ, residuals
 end
+
+ 
 
 # Generate grid data
 x_values1 = range(0, L, length=ix1+1)
