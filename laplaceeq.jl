@@ -209,10 +209,11 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     ϕ = zeros(ix+1, jx+1)
     ϕ_next = copy(ϕ)
     
-    ϕ[:, 1] .= 0.0
-    ϕ[:, jx+1] .= 1.0
-    ϕ[1, :] .= 0.0
-    ϕ[ix+1, :] .= 0.0
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
+    ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
+    ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
+    ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
     ϕ_next .= ϕ
     
     residuals = Float64[]
@@ -224,45 +225,62 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
         ϕ_prev = copy(ϕ)
         
         for i in 2:ix
-            # the a,b,c,d should be the ϕ_prev values for the iteration to make sense?
-            a = zeros(jx-1) # lower 
-            b = zeros(jx-1) # main 
-            c = zeros(jx-1) # upper 
-            d = zeros(jx-1) # solution/RHS 
-
+            a = zeros(jx-1)  # lower diagonal
+            b = zeros(jx-1)  # main diagonal
+            c = zeros(jx-1)  # upper diagonal
+            d = zeros(jx-1)  # right-hand side
+            
             for j in 2:jx
-                # Set coefficients for the tridiagonal system
-                a[j] = 1.0/(Δy^2)  # Lower diagonal coefficient
-                b[j] = -2.0 * ((1.0/(Δx^2)) + (1.0/(Δy^2)))  # Main diagonal coefficient
-                c[j] = 1.0/(Δy^2)  # Upper diagonal coefficient
+                idx = j - 1  # Index in the tridiagonal system arrays
                 
-                # Set the right-hand side with existing values from neighboring points
-                d[j] = -(1.0/(Δx^2)) * (ϕ[i+1, j] + ϕ_next[i-1, j])
+                # Lower diagonal (exists for all but first row)
+                if j > 2
+                    a[idx] = 1.0/(Δy^2)
+                end
+                
+                # Main diagonal (exists for all rows)
+                b[idx] = -2.0 * (1/(Δx^2) + 1/(Δy^2))
+                
+                # Upper diagonal (exists for all but last row)
+                if j < jx
+                    c[idx] = 1.0/(Δy^2)
+                end
+                
+                # Right hand side - contributions from i-1 and i+1 lines
+                d[idx] = (-1.0/Δx^2) .* (ϕ[i+1,j] .+ ϕ_next[i-1,j])
+                
+                # Account for boundary conditions
+                if j == 2
+                    d[idx] = 1.0 
+                    # d[idx] -= (1.0/(Δy^2)) * ϕ[i,1]  # Bottom boundary
+                end
+                if j == jx
+                    d[idx] = 0.0
+                    # d[idx] -= (1.0/(Δy^2)) * ϕ[i,jx+1]  # Top boundary
+                end
             end
-        
-            # Lower boundary (j=1)
-            d[2] -= (1.0/(Δy^2)) * ϕ[i, 1]
-            # Upper boundary (j=jx+1)
-            d[jx] -= (1.0/(Δy^2)) * ϕ[i, jx+1]
-
-            ϕ_tilde = thomas_algorithm(a, b, c, d, jx)
-            ϕ_next[i,:] = ϕ[i,:] + ω * (ϕ_tilde - ϕ[i,:])
+            
+            ϕ_tilde = thomas_algorithm(a, b, c, d, jx-1)
+            
+            for j in 2:jx
+                idx = j - 1
+                ϕ_next[i,j] = ϕ[i,j] + ω * (ϕ_tilde[idx] - ϕ[i,j])
+            end 
 
         end
-
-        ϕ .= ϕ_next 
-        diff = ϕ - ϕ_prev
-        change_norm = norm(diff)
+        
+        ϕ .= ϕ_next
         
         max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
         
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
         if change_norm < ϵ
             converged = true
         end
-
-    end 
-        
+    end
     
     return ϕ, residuals
 end
