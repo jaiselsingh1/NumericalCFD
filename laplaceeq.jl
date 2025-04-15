@@ -205,6 +205,7 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     return ϕ, residuals
 end
 
+
 function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     ϕ = zeros(ix+1, jx+1)
     ϕ_next = copy(ϕ)
@@ -224,49 +225,53 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
         iter_count += 1
         ϕ_prev = copy(ϕ)
         
-        for i in 2:ix
-            a = zeros(jx-1)  # lower diagonal
-            b = zeros(jx-1)  # main diagonal
-            c = zeros(jx-1)  # upper diagonal
-            d = zeros(jx-1)  # right-hand side
+        # Sweep through internal points
+        for i = 2:ix 
+            # Set up tridiagonal system
+            a = zeros(jx-1)  # Lower diagonal
+            b = zeros(jx-1)  # Main diagonal
+            c = zeros(jx-1)  # Upper diagonal
+            d = zeros(jx-1)  # Right-hand side
             
-            for j in 2:jx
-                idx = j - 1  # Index in the tridiagonal system arrays
+            # Fill the system
+            for j = 1:jx-1
+                grid_j = j + 1  # Map to grid index (j=1 -> grid point 2)
                 
-                # Lower diagonal (exists for all but first row)
-                if j > 2
-                    a[idx] = 1.0/(Δy^2)
-                end
-                
-                # Main diagonal (exists for all rows)
-                b[idx] = -2.0 * (1/(Δx^2) + 1/(Δy^2))
-                
-                # Upper diagonal (exists for all but last row)
-                if j < jx
-                    c[idx] = 1.0/(Δy^2)
-                end
-                
-                # Right hand side - contributions from i-1 and i+1 lines
-                d[idx] = (-1.0/Δx^2) .* (ϕ[i+1,j] .+ ϕ_next[i-1,j])
+                # Lower diagonal
+                if j == 1
+                    a[j] = 0.0  # No lower diagonal for first row
+                else 
+                    a[j] = 1/Δy^2 
+                end 
+
+                # Upper diagonal
+                if j == jx-1
+                    c[j] = 0.0  # No upper diagonal for last row
+                else 
+                    c[j] = 1/Δy^2 
+                end 
+
+                # Main diagonal - coefficient of phi[i,j]
+                b[j] = -2.0 * ((1/Δx^2) + (1/Δy^2))
+
+                # Right-hand side - uses already updated values from previous lines
+                d[j] = (-1.0/Δx^2) * (ϕ[i+1,grid_j] + ϕ_next[i-1,grid_j])
                 
                 # Account for boundary conditions
-                if j == 2
-                    d[idx] = 1.0 
-                    # d[idx] -= (1.0/(Δy^2)) * ϕ[i,1]  # Bottom boundary
+                if j == 1
+                    d[j] -= (1.0/Δx^2) * ϕ[i,1]  # Bottom boundary
                 end
-                if j == jx
-                    d[idx] = 0.0
-                    # d[idx] -= (1.0/(Δy^2)) * ϕ[i,jx+1]  # Top boundary
+                if j == jx-1
+                    d[j] -= (1.0/Δx^2) * ϕ[i,jx+1]  # Top boundary
                 end
-            end
-            
-            ϕ_tilde = thomas_algorithm(a, b, c, d, jx-1)
-            
-            for j in 2:jx
-                idx = j - 1
-                ϕ_next[i,j] = ϕ[i,j] + ω * (ϕ_tilde[idx] - ϕ[i,j])
             end 
 
+            solution = thomas_algorithm(a, b, c, d, jx-1)
+            
+            for j = 1:jx-1
+                grid_j = j + 1
+                ϕ_next[i,grid_j] = ϕ[i,grid_j] + ω * (solution[j] - ϕ[i,grid_j])
+            end
         end
         
         ϕ .= ϕ_next
@@ -285,6 +290,85 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     return ϕ, residuals
 end
 
+#=
+function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
+    ϕ = zeros(ix+1, jx+1)
+    ϕ_next = copy(ϕ)
+    
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0         # ϕ(x,0) = 0
+    ϕ[:, jx+1] .= 1.0      # ϕ(x,W) = 1
+    ϕ[1, :] .= 0.0         # ϕ(0,y) = 0
+    ϕ[ix+1, :] .= 0.0      # ϕ(L,y) = 0
+    
+    ϕ_next .= ϕ
+    
+    residuals = Float64[]
+    converged = false
+    iter_count = 0
+    
+    while !converged && iter_count < max_iter
+        iter_count += 1
+        ϕ_prev = copy(ϕ)
+        
+        for i = 2:ix 
+            # the boundary points are at 2 and jx+1 hence these are only jx-1 in length 
+            a = zeros(jx-1)
+            b = zeros(jx-1)
+            c = zeros(jx-1)
+            d = zeros(jx-1)
+
+            ϕ_tilde = copy(ϕ)
+
+            for j = 2:jx-1 
+
+                if j == 2
+                    a[j] = 0.0 # lower diagnol has no value in the beginning 
+                else 
+                    a[j] = 1/Δy^2 
+                end 
+
+                if j == jx
+                    c[j] = 0.0  # upper diagnol has no value at end 
+                else 
+                    c[j] = 1/Δy^2 
+                end 
+
+                b[j] = -2.0 * ((1/Δx^2) + (1/Δy^2))
+
+                # Account for boundary conditions
+                if j == 2
+                     d[j] = (-1.0/(Δx^2)) * (ϕ[i,1] + ϕ_next[i-1, 1])  # top boundary 
+                elseif j == jx-1
+                     d[j] = (-1.0/(Δx^2)) * (ϕ[i,jx+1] + ϕ_next[i-1, jx+1]) #  bottom boundary
+                else 
+                    d[j] = (-1.0/Δx^2) * (ϕ[i+1,j] + ϕ_next[i-1,j])
+                end
+            
+            end 
+
+            update = thomas_algorithm(a,b,c,d,jx-1)
+            ϕ_tilde .= ϕ[i, :] .+ update
+            ϕ_next[i,:] .= ϕ[i,:] .+ ω.*(ϕ_tilde[i,:] .- ϕ[i,:])
+        
+        end
+        
+        ϕ .= ϕ_next
+        
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
+        push!(residuals, max_res)
+        
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
+        if change_norm < ϵ
+            converged = true
+        end
+    end
+    
+    return ϕ, residuals
+end
+=#
  
 
 # Generate grid data
