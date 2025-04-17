@@ -67,8 +67,8 @@ def jacobi(ix, jx):
 
     # Constants
     res = 1e-5
-    dx = L/ix
-    dy = W/jx
+    dx = L/(ix-1)
+    dy = W/(jx-1)
     K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
     max_iter = 10000
 
@@ -102,7 +102,7 @@ def jacobi(ix, jx):
 
     # Plotting
     plt.figure('Jacobi Max Residual')
-    plt.plot(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
     plt.xlabel('Iterations')
     plt.ylabel('Max Residual')
     plt.legend()
@@ -116,6 +116,119 @@ def jacobi(ix, jx):
         plt.plot(x, phi_exact, label="Exact Solution")
     plt.legend()
 
+
+def gauss_seidel(ix, jx):
+
+    # Constants
+    res = 1e-5
+    dx = L/(ix-1)
+    dy = W/(jx-1)
+    K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
+    max_iter = 10000
+
+    # Initializing arrays
+    x = np.linspace(0.0, L, ix)
+    y = np.linspace(0.0, W, jx)
+    phi = np.zeros((ix, jx))
+    phi_new = np.zeros((ix, jx))
+    max_res_list = []
+
+    # Boundary Condition
+    phi[:, -1] = np.ones(ix)
+    phi_new[:, -1] = np.ones(ix)
+
+    for k in range(max_iter):
+
+        # Gauss-Seidel
+        for j in range(1, jx-1):
+            for i in range(1, ix-1):
+                 phi_new[i, j] = 1/K * ((phi[i+1, j] + phi_new[i-1, j])/dx**2 + (phi[i, j+1] + phi_new[i, j-1])/dy**2)
+
+        # Computing max residual
+        max_res = np.max(np.abs(phi_new - phi))
+        max_res_list.append(max_res)
+
+        if max_res < res:
+            break
+
+        # Shifting computation window back
+        phi = phi_new.copy()
+
+    # Plotting
+    plt.figure('Gauss-Seidel Max Residual')
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.xlabel('Iterations')
+    plt.ylabel('Max Residual')
+    plt.legend()
+    
+    plt.figure('Gauss-Seidel Line Plot')
+    idy = np.argmin(np.abs(y - W/2))
+    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    plt.xlabel('x')
+    plt.ylabel('phi(x, W/2)')
+    if ix == 50:
+        plt.plot(x, phi_exact, label="Exact Solution")
+    plt.legend()
+
+
+def sor(ix, jx):
+
+    # Constants
+    w = 1.8 # relaxation factor
+    res = 1e-5
+    dx = L/(ix-1)
+    dy = W/(jx-1)
+    K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
+    max_iter = 10000
+
+    # Initializing arrays
+    x = np.linspace(0.0, L, ix)
+    y = np.linspace(0.0, W, jx)
+    phi = np.zeros((ix, jx))
+    phi_temp = np.zeros((ix, jx))
+    phi_new = np.zeros((ix, jx))
+    max_res_list = []
+
+    # Boundary Condition
+    phi[:, -1] = np.ones(ix)
+    phi_temp[:, -1] = np.ones(ix)
+    phi_new[:, -1] = np.ones(ix)
+
+    for k in range(max_iter):
+
+        # Successive Over-Relaxation
+        for j in range(1, jx-1):
+            for i in range(1, ix-1):
+                 phi_temp[i, j] = 1/K * ((phi[i+1, j] + phi_new[i-1, j])/dx**2 + (phi[i, j+1] + phi_new[i, j-1])/dy**2)
+                 phi_new[i, j] = phi[i, j] + w * (phi_temp[i, j] - phi[i, j])
+
+        # Computing max residual
+        max_res = np.max(np.abs(phi_new - phi))
+        max_res_list.append(max_res)
+
+        if max_res < res:
+            break
+
+        # Shifting computation window back
+        phi = phi_new.copy()
+
+    # Plotting
+    plt.figure('SOR Max Residual')
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.xlabel('Iterations')
+    plt.ylabel('Max Residual')
+    plt.legend()
+    
+    plt.figure('SOR Line Plot')
+    idy = np.argmin(np.abs(y - W/2))
+    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    plt.xlabel('x')
+    plt.ylabel('phi(x, W/2)')
+    if ix == 50:
+        plt.plot(x, phi_exact, label="Exact Solution")
+    plt.legend()
+
+
 if __name__ == "__main__":
     
     L = 1.0
@@ -127,5 +240,13 @@ if __name__ == "__main__":
     # Jacobi
     jacobi(50, 50)
     jacobi(100, 100)
+
+    # Gauss-Seidel
+    gauss_seidel(50, 50)
+    gauss_seidel(100, 100)
+
+    # SOR
+    sor(50, 50)
+    sor(100, 100)
 
     plt.show()
