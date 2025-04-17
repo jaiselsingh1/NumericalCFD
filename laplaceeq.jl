@@ -206,9 +206,8 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
 end
 
 function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
-    # Initialize solution array
     ϕ = zeros(ix+1, jx+1)
-    ϕ_next = copy(ϕ)
+    ϕ_new = copy(ϕ)
     
     # Apply boundary conditions
     ϕ[:, 1] .= 0.0          # Bottom boundary
@@ -216,7 +215,13 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     ϕ[1, :] .= 0.0          # Left boundary
     ϕ[ix+1, :] .= 0.0       # Right boundary
     
-    ϕ_next .= ϕ
+    ϕ_new .= ϕ
+    ϕ_temp = copy(ϕ)
+    
+    a = ones(jx+1) ./ (Δy^2)        # Lower diagonal
+    b = ones(jx+1) .* (-2.0 * (1.0/(Δx^2) + 1.0/(Δy^2)))    # Main diagonal
+    c = ones(jx+1) ./ (Δy^2)        # Upper diagonal
+    d = zeros(jx+1)                # Right-hand side vector
     
     residuals = Float64[]
     converged = false
@@ -226,27 +231,18 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
         iter_count += 1
         ϕ_prev = copy(ϕ)
         
-        # Line-by-line in i-direction (rows)
         for i = 2:ix
-            # Create tridiagonal system coefficients (interior points only)
-            a = ones(jx-1) .* (1.0/Δy^2)                       # Lower diagonal
-            b = ones(jx-1) .* (-2.0 * (1.0/Δx^2 + 1.0/Δy^2))   # Main diagonal
-            c = ones(jx-1) .* (1.0/Δy^2)                       # Upper diagonal
+            d = -1.0 .* (ϕ[i+1, :] + ϕ_new[i-1, :]) ./ (Δx^2)
             
-            # Right-hand side vector
-            d = zeros(jx-1)
-            for j = 2:jx
-                d[j-1] = -(1.0/Δx^2) * (ϕ[i+1,j] + ϕ_next[i-1,j])
-            end
+            ϕ_temp[i, :] = thomas_algorithm(a, b, c, d, jx+1)
             
-            # Solve the tridiagonal system
-            solution = thomas_algorithm(a, b, c, d, jx-1)
+            ϕ_new[i, 2:jx] = ϕ[i, 2:jx] + ω .* (ϕ_temp[i, 2:jx] - ϕ[i, 2:jx])
             
-            # Apply SOR update to the entire row
-            ϕ_next[i, 2:jx] = ϕ[i, 2:jx] + ω .* (solution - ϕ[i, 2:jx])
+            ϕ_new[i, 1] = 0.0
+            ϕ_new[i, jx+1] = 1.0
         end
         
-        ϕ .= ϕ_next
+        ϕ .= ϕ_new
         
         diff = ϕ - ϕ_prev
         change_norm = norm(diff)
