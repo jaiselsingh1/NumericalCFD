@@ -205,7 +205,64 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     return ϕ, residuals
 end
 
+function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
+    # Initialize solution array
+    ϕ = zeros(ix+1, jx+1)
+    ϕ_next = copy(ϕ)
+    
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0          # Bottom boundary
+    ϕ[:, jx+1] .= 1.0       # Top boundary 
+    ϕ[1, :] .= 0.0          # Left boundary
+    ϕ[ix+1, :] .= 0.0       # Right boundary
+    
+    ϕ_next .= ϕ
+    
+    residuals = Float64[]
+    converged = false
+    iter_count = 0
+    
+    while !converged && iter_count < max_iter
+        iter_count += 1
+        ϕ_prev = copy(ϕ)
+        
+        # Line-by-line in i-direction (rows)
+        for i = 2:ix
+            # Create tridiagonal system coefficients (interior points only)
+            a = ones(jx-1) .* (1.0/Δy^2)                       # Lower diagonal
+            b = ones(jx-1) .* (-2.0 * (1.0/Δx^2 + 1.0/Δy^2))   # Main diagonal
+            c = ones(jx-1) .* (1.0/Δy^2)                       # Upper diagonal
+            
+            # Right-hand side vector
+            d = zeros(jx-1)
+            for j = 2:jx
+                d[j-1] = -(1.0/Δx^2) * (ϕ[i+1,j] + ϕ_next[i-1,j])
+            end
+            
+            # Solve the tridiagonal system
+            solution = thomas_algorithm(a, b, c, d, jx-1)
+            
+            # Apply SOR update to the entire row
+            ϕ_next[i, 2:jx] = ϕ[i, 2:jx] + ω .* (solution - ϕ[i, 2:jx])
+        end
+        
+        ϕ .= ϕ_next
+        
+        diff = ϕ - ϕ_prev
+        change_norm = norm(diff)
+        
+        max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
+        push!(residuals, max_res)
+        
+        if change_norm < ϵ
+            converged = true
+        end
+    end
+    
+    return ϕ, residuals
+end
 
+#=
 function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
     ϕ = zeros(ix+1, jx+1)
     ϕ_next = copy(ϕ)
@@ -285,7 +342,7 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
     
     return ϕ, residuals
 end
-
+=#
 
 # Generate grid data
 x_values1 = range(0, L, length=ix1+1)
