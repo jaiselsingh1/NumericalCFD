@@ -205,65 +205,78 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     return ϕ, residuals
 end
 
-function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
+
+function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
     ϕ = zeros(ix+1, jx+1)
     ϕ_next = copy(ϕ)
     
-    ϕ[:, 1] .= 0.0
-    ϕ[:, jx+1] .= 1.0
-    ϕ[1, :] .= 0.0
-    ϕ[ix+1, :] .= 0.0
+    # Apply boundary conditions
+    ϕ[:, 1] .= 0.0          # Bottom boundary
+    ϕ[:, jx+1] .= 1.0       # Top boundary
+    ϕ[1, :] .= 0.0          # Left boundary
+    ϕ[ix+1, :] .= 0.0       # Right boundary
     
     ϕ_next .= ϕ
     
     residuals = Float64[]
     converged = false
-    iter_count = 0
     
-    while !converged && iter_count < max_iter
-        iter_count += 1
+    while !converged 
         ϕ_prev = copy(ϕ)
         
         for i = 2:ix 
-            a = zeros(jx-1)
-            b = zeros(jx-1)
-            c = zeros(jx-1)
-            d = zeros(jx-1)
+            a = zeros(jx-1)  # Lower diagonal
+            b = zeros(jx-1)  # Main diagonal
+            c = zeros(jx-1)  # Upper diagonal
+            d = zeros(jx-1)  # Right-hand side
             
-            for j = 1:jx-1
+            for j = 1:(jx-1)
+                # Main diagonal coefficient
+                b[j] = -2.0 * ((1.0/(Δx^2)) + (1.0/(Δy^2)))
+                
+                # Lower diagonal (j-1 term)
                 if j > 1
                     a[j] = 1.0/(Δy^2)
                 end
                 
-                b[j] = -2.0 * ((1.0/(Δx^2)) + (1.0/(Δy^2)))
-                
-                if j < jx-1
+                # Upper diagonal (j+1 term)
+                if j < (jx-1)
                     c[j] = 1.0/(Δy^2)
                 end
                 
+                # Right-hand side from x-direction terms
                 d[j] = -(1.0/(Δx^2)) * (ϕ[i+1,j+1] + ϕ_next[i-1,j+1])
                 
+                # Boundary condition adjustments
                 if j == 1
-                    d[j] = (-1.0/(Δx^2)) * ϕ[i,1]
+                    # Bottom neighbor (j=0) is a boundary point
+                    d[j] -= (1.0/(Δy^2)) * ϕ[i,j]
                 end
-                if j == jx-1
-                    d[j] = (-1.0/(Δx^2)) * ϕ[i,jx+1]
+                
+                if j == (jx-1)
+                    # Top neighbor (j=jx+1) is a boundary point
+                    d[j] -= (1.0/(Δy^2)) * ϕ[i,j+2]
                 end
             end
             
+            # Solve the tridiagonal system
             solution = thomas_algorithm(a, b, c, d, jx-1)
-            #ϕ_next[i, 2:jx] = ϕ[i, 2:jx] + ω * (solution - ϕ[i, 2:jx])
-            ϕ_next[i, 2:jx] = solution
+            
+            # Apply SOR update
+            for j = 1:(jx-1)
+                ϕ_next[i,j+1] = ϕ[i,j+1] + ω * (solution[j] - ϕ[i,j+1])
+            end
         end
-
+        
+        # Update the solution
         ϕ .= ϕ_next
         
+        # Check convergence
         diff = ϕ - ϕ_prev
         change_norm = norm(diff)
         
         max_res = calculate_residual(ϕ, ix, jx, Δx, Δy)
         push!(residuals, max_res)
-        
         
         if change_norm < ϵ
             converged = true
@@ -272,7 +285,7 @@ function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8, max_iter=5000)
     
     return ϕ, residuals
 end
- 
+
 
 # Generate grid data
 x_values1 = range(0, L, length=ix1+1)
