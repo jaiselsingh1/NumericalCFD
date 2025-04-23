@@ -41,6 +41,10 @@ def thomas_algorithm(p, q, r, s):
 
 def exact_sol(ix, jx):
 
+    # Increase grid size by one for even spacing
+    ix += 1
+    jx += 1
+
     # Constants
     n = 50
 
@@ -78,12 +82,16 @@ def exact_sol(ix, jx):
 
 def jacobi(ix, jx):
 
+    # Increase grid size by one for even spacing
+    ix += 1
+    jx += 1
+
     # Constants
     tol = 1e-5
     dx = L/(ix-1)
     dy = W/(jx-1)
     K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
-    max_iter = 10000
+    max_iter = 20000
 
     # Initializing arrays
     x = np.linspace(0.0, L, ix)
@@ -111,32 +119,36 @@ def jacobi(ix, jx):
 
         # Shifting computation window back
         phi = phi_new.copy()
-
+    
     # Plotting
     plt.figure('Jacobi Max Residual')
-    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix-1}")
     plt.xlabel('Iterations')
     plt.ylabel('Max Residual')
     plt.legend()
     
     plt.figure('Jacobi Line Plot')
-    idy = np.argmin(np.abs(y - W/2))
-    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    if ix-1 == 50:
+        plt.plot(x, phi_exact, 'g', label="Exact Solution")
+    idy = int(ix/2)
+    plt.plot(x, phi[:, idy], '--', label=f"ix = jx = {ix-1}")
     plt.xlabel('x')
     plt.ylabel('phi(x, W/2)')
-    if ix == 50:
-        plt.plot(x, phi_exact, label="Exact Solution")
     plt.legend()
 
 
 def gauss_seidel(ix, jx):
+
+    # Increase grid size by one for even spacing
+    ix += 1
+    jx += 1
 
     # Constants
     tol = 1e-5
     dx = L/(ix-1)
     dy = W/(jx-1)
     K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
-    max_iter = 10000
+    max_iter = 20000
 
     # Initializing arrays
     x = np.linspace(0.0, L, ix)
@@ -167,22 +179,26 @@ def gauss_seidel(ix, jx):
 
     # Plotting
     plt.figure('Gauss-Seidel Max Residual')
-    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix-1}")
     plt.xlabel('Iterations')
     plt.ylabel('Max Residual')
     plt.legend()
     
     plt.figure('Gauss-Seidel Line Plot')
-    idy = np.argmin(np.abs(y - W/2))
-    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    if ix-1 == 50:
+        plt.plot(x, phi_exact, 'g', label="Exact Solution")
+    idy = int(ix/2)
+    plt.plot(x, phi[:, idy], '--', label=f"ix = jx = {ix-1}")
     plt.xlabel('x')
     plt.ylabel('phi(x, W/2)')
-    if ix == 50:
-        plt.plot(x, phi_exact, label="Exact Solution")
     plt.legend()
 
 
 def sor(ix, jx):
+    
+    # Increase grid size by one for even spacing
+    ix += 1
+    jx += 1
 
     # Constants
     w = 1.8 # relaxation factor
@@ -190,7 +206,7 @@ def sor(ix, jx):
     dx = L/(ix-1)
     dy = W/(jx-1)
     K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
-    max_iter = 10000
+    max_iter = 20000
 
     # Initializing arrays
     x = np.linspace(0.0, L, ix)
@@ -224,22 +240,26 @@ def sor(ix, jx):
 
     # Plotting
     plt.figure('SOR Max Residual')
-    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix-1}")
     plt.xlabel('Iterations')
     plt.ylabel('Max Residual')
     plt.legend()
     
     plt.figure('SOR Line Plot')
-    idy = np.argmin(np.abs(y - W/2))
-    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    if ix-1 == 50:
+        plt.plot(x, phi_exact, 'g', label="Exact Solution")
+    idy = int(ix/2)
+    plt.plot(x, phi[:, idy], '--', label=f"ix = jx = {ix-1}")
     plt.xlabel('x')
     plt.ylabel('phi(x, W/2)')
-    if ix == 50:
-        plt.plot(x, phi_exact, label="Exact Solution")
     plt.legend()
 
 
 def slor(ix, jx):
+
+    # Increase grid size by one for even spacing
+    ix += 1
+    jx += 1
 
     # Constants
     w = 1.8 # relaxation factor
@@ -247,7 +267,7 @@ def slor(ix, jx):
     dx = L/(ix-1)
     dy = W/(jx-1)
     K = 2*(1/dx**2 + 1/dy**2) # 1/h^2
-    max_iter = 1000
+    max_iter = 20000
 
     # Initializing arrays
     x = np.linspace(0.0, L, ix)
@@ -294,18 +314,18 @@ def slor(ix, jx):
 
     # Plotting
     plt.figure('SLOR Max Residual')
-    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix}")
+    plt.semilogy(np.arange(k+1), max_res_list, label=f"ix = jx = {ix-1}")
     plt.xlabel('Iterations')
     plt.ylabel('Max Residual')
     plt.legend()
     
     plt.figure('SLOR Line Plot')
+    if ix-1 == 50:
+        plt.plot(x, phi_exact, 'g', label="Exact Solution")
     idy = int(ix/2)
-    plt.plot(x, phi[:, idy], label=f"ix = jx = {ix}")
+    plt.plot(x, phi[:, idy], '--', label=f"ix = jx = {ix-1}")
     plt.xlabel('x')
     plt.ylabel('phi(x, W/2)')
-    if ix == 50:
-        plt.plot(x, phi_exact, label="Exact Solution")
     plt.legend()
 
 
@@ -317,7 +337,7 @@ if __name__ == "__main__":
     # Exact Solution
     phi_exact = exact_sol(50, 50)
     print("Exact done!")
-    '''
+
     # Jacobi
     jacobi(50, 50)
     jacobi(100, 100)
@@ -332,7 +352,7 @@ if __name__ == "__main__":
     sor(50, 50)
     sor(100, 100)
     print("SOR done!")
-    '''
+
     # SLOR
     slor(50, 50)
     slor(100, 100)
