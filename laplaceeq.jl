@@ -47,32 +47,30 @@ function calculate_residual(ϕ, ix, jx, Δx, Δy)
     return max_res
 end
 
-function thomas_algorithm(a, b, c, d, n)
-    # d is the solution vector 
-    # a is the lower diagnol 
-    # b is main diagnol 
-    # c is the upper diagnol 
+function thomas_algorithm(a::Vector{Float64}, b::Vector{Float64}, c::Vector{Float64},
+    d::Vector{Float64}, n::Int64)
 
-    x = copy(d) # make a copy of the solution 
-    c_prime = copy(c) # this will be updated throughout 
+    x = copy(d)
+    c_prime = copy(c)
 
-    # first row has no a component
-    c_prime[1] /= b[1] # normalize the upper diagnol 
-    x[1] /= b[1] # 
+    # Setting initial elements
+    c_prime[1] /= b[1]
+    x[1] /= b[1]
 
-    #rows below the first row 
-    for i = 2:n 
-        scale = 1.0 / (b[i] - a[i] * c_prime[i-1])
-        c_prime[i] *= scale 
-        x[i] = (x[i] - a[i] * c_prime[i-1]) * scale 
-    end 
+    for i = 2:n
+    # Scale factor is for c_prime and x
+        scale = 1.0 / (b[i] - c_prime[i-1]*a[i])
+        c_prime[i] *= scale
+        x[i] = (x[i] - a[i] * x[i-1]) * scale
+    end
 
-    # do back substitution 
+    # Back-substitution
     for i = n-1:-1:1
         x[i] -= (c_prime[i] * x[i+1])
-    end 
+    end
 
-    return x 
+    return x
+
 end 
 
 function jacobi_method(ix, jx, Δx, Δy, ϵ)
@@ -204,7 +202,6 @@ function sor_method(ix, jx, Δx, Δy, ϵ, ω=1.8)
     
     return ϕ, residuals
 end
-
 
 function SLOR(ix, jx, Δx, Δy, ϵ, ω=1.8)
     ϕ = zeros(ix+1, jx+1)
