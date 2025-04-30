@@ -98,7 +98,6 @@ end
 
 
 function calculate_slip_velocity(Φ)
-    # Create arrays to store values
     surface_v = Float64[]
     x_over_c = Float64[]
 
@@ -116,15 +115,9 @@ function calculate_slip_velocity(Φ)
             # Calculate normalized x position (x/c)
             x_c = x_val  # chord length c = 1
 
-            # Calculate velocity using centered difference
-            # Use values just above the surface for better accuracy
-            v_over_V = (Φ[i+1, 2] - Φ[i-1, 2]) / (2 * Δx)
+            v_over_V_sq = (1 + (Φ[i+1, 2] - Φ[i-1, 2]) / (Δx))^2 / 1
 
-            # Scale to match reference data
-            v_scaling = 11.0  # Adjust this value based on your results
-            v_over_V *= v_scaling
-
-            push!(surface_v, v_over_V)
+            push!(surface_v, v_over_V_sq)
             push!(x_over_c, x_c)
         end
     end
@@ -138,24 +131,21 @@ function plot_slip_velocity_comparison(Φ)
     x_c_ref = [0, 0.5, 1.25, 2.5, 5.0, 7.5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95, 100]
     x_c_ref = x_c_ref ./ 100
     v_V_ref = [0, 0.640, 1.010, 1.241, 1.373, 1.402, 1.411, 1.411, 1.399, 1.378, 1.350, 1.298, 1.228, 1.166, 1.104, 1.044, 0.950, 0.606, 0]
+    v_V_ref_sq = v_V_ref .^ 2
 
     plt_comparison = plot(x_over_c, surface_v,
         label="Numerical Solution",
         linewidth=2,
         xlabel="x/c",
-        ylabel="v/V (surface slip velocity)",
+        ylabel="(v/V)² (squared surface slip velocity)",
         title="Surface Slip Velocity Comparison for NACA 0012 Airfoil")
 
-    plot!(plt_comparison, x_c_ref, v_V_ref,
+    plot!(plt_comparison, x_c_ref, v_V_ref_sq,
         label="Reference Data",
         linewidth=2,
         linestyle=:dash,
         marker=:circle,
         markersize=4)
-
-    # Add a vertical line at the leading edge radius (1.58% chord)
-    vline!(plt_comparison, [0.0158], label="L.E. radius: 1.58% chord",
-        linestyle=:dot, linewidth=1)
 
     return plt_comparison
 end
