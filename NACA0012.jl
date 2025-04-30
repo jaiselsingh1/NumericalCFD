@@ -3,7 +3,7 @@ using Plots
 Δx = Δy = 0.02
 L = W = 5.0
 ix = Int(2 * (L / Δx)) + 1
-jx = Int(2 * (W / Δy)) + 1
+jx = Int(W / Δy) + 1
 
 function dNACA_0012(x)
     if x < 1e-10
@@ -153,7 +153,7 @@ end
 
 function plot_potential_field(Φ)
     x_grid = range(-L, L, length=ix)
-    y_grid = range(-W, W, length=jx)
+    y_grid = range(0, W, length=jx)
 
     # Plot potential field contour
     plt_contour = contour(x_grid, y_grid, Φ',
