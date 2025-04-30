@@ -130,8 +130,8 @@ function plot_slip_velocity_comparison(Φ)
 
     x_c_ref = [0, 0.5, 1.25, 2.5, 5.0, 7.5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95, 100]
     x_c_ref = x_c_ref ./ 100
-    v_V_ref = [0, 0.640, 1.010, 1.241, 1.373, 1.402, 1.411, 1.411, 1.399, 1.378, 1.350, 1.298, 1.228, 1.166, 1.104, 1.044, 0.950, 0.606, 0]
-    v_V_ref_sq = v_V_ref .^ 2
+    v_V_ref_sq = [0, 0.640, 1.010, 1.241, 1.378, 1.402, 1.411, 1.411, 1.399, 1.378, 1.350, 1.288, 1.228, 1.166, 1.109, 1.044, 0.956, 0.906, 0]
+
 
     plt_comparison = plot(x_over_c, surface_v,
         label="Numerical Solution",
@@ -157,8 +157,9 @@ function plot_potential_field(Φ)
 
     # Plot potential field contour
     plt_contour = contour(x_grid, y_grid, Φ',
-        levels=50,
+        levels=100,
         fill=true,
+        cmap=:viridis,
         title="Potential Field Contour with Airfoil Outline",
         xlabel="x",
         ylabel="y")
