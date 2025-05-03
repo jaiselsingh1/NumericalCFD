@@ -1,4 +1,8 @@
-# NumericalCFD: A Collection of Numerical Computational Fluid Dynamics (CFD) Codes
+<div align="center">
+  <img src="./numerical_cfd_banna.png?raw=true" alt="banner image titled numerical cfd">
+</div>
+
+# A Collection of Numerical Computational Fluid Dynamics Codes
 
 This repository contains a collection of Julia and Python codes implementing various numerical methods for solving problems in computational fluid dynamics (CFD).  The codebase covers a range of topics, including incompressible flow, supersonic wave drag, and ordinary differential equation (ODE) integration.
 
